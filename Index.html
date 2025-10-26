@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ball and Sleeping Kiko</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f8ff;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .scene {
+            width: 100%;
+            height: 400px;
+            background-color: #a8d5ba;
+            border-radius: 8px;
+            position: relative;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .ball {
+            width: 40px;
+            height: 40px;
+            background-color: #e74c3c;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 150px;
+            left: 50px;
+            transition: left 3s ease-out, opacity 0.5s;
+            z-index: 10;
+        }
+        .fox-container {
+            position: absolute;
+            bottom: 0;
+            right: 100px;
+            width: 300px;
+            height: 300px;
+            z-index: 5;
+        }
+        .fox-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.5s;
+        }
+        .distance-marker {
+            position: absolute;
+            bottom: 140px;
+            left: 50px;
+            width: calc(100% - 250px);
+            height: 2px;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+        .distance-label {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .controls {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        .force-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            width: 100px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .reset-btn {
+            background-color: #e67e22;
+        }
+        .reset-btn:hover {
+            background-color: #d35400;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            min-height: 24px;
+            text-align: center;
+        }
+        .instructions {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f4fc;
+            border-radius: 8px;
+            line-height: 1.5;
+        }
+        .physics-info {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .sound-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .sound-controls button {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        .target-indicator {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.7;
+            z-index: 6;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        .ball-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ball and Sleeping Kiko</h1>
+    
+    <div class="game-container">
+        <div class="scene">
+            <div class="ball" id="ball"></div>
+            <div class="fox-container" id="fox-container">
+                <img src="Gemini_Generated_Image_h8yki9h8yki9h8yk-removebg-preview.png" alt="Sleeping Fox" class="fox-image" id="fox-image">
+                <div class="target-indicator" id="target-indicator"></div>
+            </div>
+            <div class="distance-marker"></div>
+            <div class="distance-label" id="distance-label">Distance: 10 meters</div>
+        </div>
+        
+        <div class="controls">
+            <div class="force-input">
+                <label for="force">Push Force:</label>
+                <input type="number" id="force" min="0" max="100" value="0">
+            </div>
+            <div class="button-group">
+                <button id="push-btn">Push Ball</button>
+                <button id="reset-btn" class="reset-btn">Reset Game</button>
+            </div>
+            <div class="result" id="result"></div>
+            
+            <div class="sound-controls">
+                <button id="mute-btn">Mute Sounds</button>
+                <span id="sound-status">Sounds: On</span>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>How to Play:</h3>
+            <p>Enter the push force to launch the ball toward Kiko.</p>
+            <ul>
+                <li>If the ball reaches Kiko exactly: Kiko wakes up! 🦊</li>
+                <li>If the ball exceeds Kiko: Kiko is hurt! 💀</li>
+                <li>If the ball doesn't reach Kiko: Kiko keeps sleeping 😴</li>
+            </ul>
+            
+            <div class="physics-info">
+                <h4>Game Information:</h4>
+                <p>The distance to Kiko is <strong>10 meters</strong>.</p>
+                <p>You must reach Kiko exactly or a little more to wake her up.</p>
+                <p>1 push force moves the ball 0.2 meters</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden audio elements for sound effects -->
+    <audio id="sleeping-sound" preload="auto">
+        <source src="audio.ogx" type="audio/ogg">
+    </audio>
+    <audio id="waking-sound" preload="auto">
+        <source src="audio-2.ogx" type="audio/ogg">
+    </audio>
+    <audio id="dead-sound" preload="auto">
+        <source src="audio-3.ogx" type="audio/ogg">
+    </audio>
+    <audio id="rolling-sound" preload="auto">
+        <source src="audio-1.ogx" type="audio/ogg">
+    </audio>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ball = document.getElementById('ball');
+            const foxImage = document.getElementById('fox-image');
+            const forceInput = document.getElementById('force');
+            const pushBtn = document.getElementById('push-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const result = document.getElementById('result');
+            const distanceLabel = document.getElementById('distance-label');
+            const scene = document.querySelector('.scene');
+            const muteBtn = document.getElementById('mute-btn');
+            const soundStatus = document.getElementById('sound-status');
+            const targetIndicator = document.getElementById('target-indicator');
+            
+            // Audio elements
+            const sleepingSound = document.getElementById('sleeping-sound');
+            const wakingSound = document.getElementById('waking-sound');
+            const deadSound = document.getElementById('dead-sound');
+            const rollingSound = document.getElementById('rolling-sound');
+            
+            // Fox image URLs for different states
+            const foxImages = {
+                sleeping: 'Gemini_Generated_Image_h8yki9h8yki9h8yk-removebg-preview.png',
+                waking: 'Gemini_Generated_Image_idmmvjidmmvjidmm-removebg-preview.png',
+                dead: 'Gemini_Generated_Image_vguiqlvguiqlvgui-removebg-preview.png'
+            };
+            
+            const distanceToFox = 10; // Distance in meters
+            const exactForce = 50; // The exact force needed to reach the fox
+            const forceToDistanceRatio = 0.2; // 1 Newton moves the ball 0.2 meters
+            
+            // Sound state
+            let soundsMuted = false;
+            let gameActive = true;
+            
+            // Calculate target position in pixels (center of the fox image)
+            const sceneWidth = scene.offsetWidth;
+            const foxContainer = document.getElementById('fox-container');
+            const foxCenterX = foxContainer.offsetLeft + (foxContainer.offsetWidth / 2);
+            
+            // Reset function
+            function resetGame() {
+                // Reset ball
+                ball.style.left = "50px";
+                ball.style.opacity = "1";
+                ball.classList.remove("ball-hidden");
+                
+                // Reset fox
+                foxImage.src = foxImages.sleeping;
+                foxImage.alt = "Sleeping Fox";
+                foxImage.style.transform = "scale(1)";
+                targetIndicator.style.backgroundColor = "red";
+                
+                // Reset result
+                result.textContent = "";
+                
+                // Reset force input
+                forceInput.value = "0";
+                
+                // Reset sounds
+                if (!soundsMuted) {
+                    sleepingSound.currentTime = 0;
+                    sleepingSound.loop = true;
+                    sleepingSound.play();
+                }
+                
+                // Enable push button
+                pushBtn.disabled = false;
+                gameActive = true;
+            }
+            
+            // Mute button functionality
+            muteBtn.addEventListener('click', function() {
+                soundsMuted = !soundsMuted;
+                soundStatus.textContent = soundsMuted ? "Sounds: Off" : "Sounds: On";
+                muteBtn.textContent = soundsMuted ? "Unmute Sounds" : "Mute Sounds";
+                
+                // Pause or resume sleeping sound based on mute state
+                if (soundsMuted) {
+                    sleepingSound.pause();
+                } else if (gameActive && foxImage.src.includes(foxImages.sleeping)) {
+                    sleepingSound.loop = true;
+                    sleepingSound.play();
+                }
+            });
+            
+            // Push button functionality
+            pushBtn.addEventListener('click', function() {
+                if (!gameActive) return;
+                
+                const force = parseInt(forceInput.value);
+                
+                if (isNaN(force) || force < 0) {
+                    result.textContent = "Please enter a valid force value!";
+                    result.style.color = "#e74c3c";
+                    return;
+                }
+                
+                // Disable push button during animation
+                pushBtn.disabled = true;
+                
+                // Reset ball position and make visible
+                ball.style.left = "50px";
+                ball.style.opacity = "1";
+                
+                // Calculate how far the ball should travel based on force
+                const distanceInMeters = force * forceToDistanceRatio;
+                const maxTravelDistanceInMeters = distanceToFox * 1.5; // Allow overshooting by 50%
+                
+                // Convert distance to pixels for animation
+                const pixelsPerMeter = (foxCenterX - 50) / distanceToFox;
+                const distanceInPixels = Math.min(distanceInMeters * pixelsPerMeter, maxTravelDistanceInMeters * pixelsPerMeter);
+                
+                // Play rolling sound
+                if (!soundsMuted) {
+                    rollingSound.currentTime = 0;
+                    rollingSound.play();
+                }
+                
+                // Animate the ball movement
+                const animationTime = Math.min(3, distanceInMeters / 5); // Adjust time based on distance
+                ball.style.transition = `left ${animationTime}s ease-out`;
+                
+                setTimeout(() => {
+                    ball.style.left = `${50 + distanceInPixels}px`;
+                }, 10);
+                
+                // Check the result after animation completes
+                setTimeout(() => {
+                    // Stop rolling sound
+                    rollingSound.pause();
+                    rollingSound.currentTime = 0;
+                    
+                    // Make the ball disappear
+                    ball.style.transition = `opacity 0.5s`;
+                    ball.style.opacity = "0";
+                    
+                    setTimeout(() => {
+                        ball.classList.add("ball-hidden");
+                    }, 500);
+                    
+                    if (Math.abs(distanceInMeters - distanceToFox) < 0.1) {
+                        result.textContent = "Perfect! The fox wakes up! 🦊";
+                        result.style.color = "#2ecc71";
+                        foxImage.src = foxImages.waking;
+                        foxImage.alt = "Waking Fox";
+                        foxImage.style.transform = "scale(1.1)";
+                        targetIndicator.style.backgroundColor = "#2ecc71";
+                        
+                        // Stop sleeping sound and play waking sound
+                        sleepingSound.pause();
+                        if (!soundsMuted) {
+                            wakingSound.currentTime = 0;
+                            wakingSound.play();
+                        }
+                    } else if (distanceInMeters > distanceToFox) {
+                        result.textContent = "Oh no! The ball hit the fox too hard! The fox is hurt! 💀";
+                        result.style.color = "#e74c3c";
+                        foxImage.src = foxImages.dead;
+                        foxImage.alt = "Dead Fox";
+                        foxImage.style.transform = "scale(1)";
+                        targetIndicator.style.backgroundColor = "#e74c3c";
+                        
+                        // Stop sleeping sound and play dead sound
+                        sleepingSound.pause();
+                        if (!soundsMuted) {
+                            deadSound.currentTime = 0;
+                            deadSound.play();
+                        }
+                    } else {
+                        result.textContent = "The ball didn't reach the fox. The fox keeps sleeping. 😴";
+                        result.style.color = "#f39c12";
+                        foxImage.src = foxImages.sleeping;
+                        foxImage.alt = "Sleeping Fox";
+                        foxImage.style.transform = "scale(1)";
+                        targetIndicator.style.backgroundColor = "red";
+                        
+                        // Continue sleeping sound
+                        if (!soundsMuted) {
+                            sleepingSound.currentTime = 0;
+                            sleepingSound.loop = true;
+                            sleepingSound.play();
+                        }
+                        
+                        // Re-enable push button if fox is still sleeping
+                        pushBtn.disabled = false;
+                        gameActive = true;
+                    }
+                    
+                    // If the fox state changed (woke up or died), keep push button disabled
+                    if (distanceInMeters >= distanceToFox - 0.1) {
+                        gameActive = false;
+                    }
+                }, animationTime * 1000 + 100);
+            });
+            
+            // Reset button functionality
+            resetBtn.addEventListener('click', resetGame);
+            
+            // Play sleeping sound when page loads
+            if (!soundsMuted) {
+                sleepingSound.loop = true;
+                sleepingSound.play();
+            }
+        });
+    </script>
+</body>
+</html>
